@@ -1,0 +1,8 @@
+{
+  "name": "yayin-tov",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check consultation.js && node --check api/leads.js"
+  }
+}

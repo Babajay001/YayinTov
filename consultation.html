@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Share your wedding plans with Yayin Tov and schedule a private bridal consultation.">
+  <title>Bridal Consultation — Yayin Tov</title>
+  <link rel="icon" type="image/png" href="yayin logo.jpeg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="consultation.css">
+</head>
+<body>
+  <main class="consultation-layout">
+    <section class="form-panel" aria-labelledby="form-title">
+      <div class="form-shell">
+        <header class="form-header">
+          <a class="brand" href="index.html" aria-label="Yayin Tov home">
+            <img src="yayin logo.jpeg" alt="">
+            <span>YAYIN <strong>TOV</strong></span>
+          </a>
+          <a class="back-home" href="index.html">
+            <span aria-hidden="true">←</span> Back to home
+          </a>
+        </header>
+
+        <div class="progress-wrap" aria-label="Form progress">
+          <div class="progress-copy">
+            <span id="stepLabel">Step 1 of 2</span>
+            <span id="stepName">Your details</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <span id="progressBar"></span>
+          </div>
+        </div>
+
+        <form id="consultationForm" novalidate>
+          <div class="form-step is-active" data-step="1">
+            <div class="intro">
+              <p class="eyebrow">Private bridal consultation</p>
+              <h1 id="form-title">Let’s begin with <em>your day.</em></h1>
+              <p>Share a few details so we can understand your plans before we speak.</p>
+            </div>
+
+            <div class="field-grid two-columns">
+              <div class="field full-width">
+                <label for="fullName">Bride’s full name <span>*</span></label>
+                <input id="fullName" name="fullName" type="text" autocomplete="name" required maxlength="120" placeholder="Your full name">
+              </div>
+
+              <div class="field">
+                <label for="email">Email address <span>*</span></label>
+                <input id="email" name="email" type="email" autocomplete="email" required maxlength="160" placeholder="you@example.com">
+              </div>
+
+              <div class="field">
+                <label for="phone">Phone number <span>*</span></label>
+                <input id="phone" name="phone" type="tel" autocomplete="tel" required maxlength="40" placeholder="+1 323 710 3310">
+              </div>
+
+              <div class="field">
+                <label for="weddingDate">Wedding date <span>*</span></label>
+                <input id="weddingDate" name="weddingDate" type="date" required>
+              </div>
+
+              <div class="field">
+                <label for="weddingLocation">Wedding city or venue <span>*</span></label>
+                <input id="weddingLocation" name="weddingLocation" type="text" required maxlength="180" placeholder="City, venue or undecided">
+              </div>
+
+              <div class="field full-width">
+                <label for="referralSource">How did you hear about Yayin Tov?</label>
+                <select id="referralSource" name="referralSource">
+                  <option value="">Select an option</option>
+                  <option>Instagram</option>
+                  <option>Facebook</option>
+                  <option>Pinterest</option>
+                  <option>Twitter</option>
+                  <option>Google</option>
+                  <option>blog </option>
+                  <option>Friend or family</option>
+                  <option>Wedding professional</option>
+                  <option>Search engine</option>
+                  <option>Event or publication</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+          
+
+            <div class="actions actions-end">
+              <button class="button button-primary" type="button" data-next>
+                Continue <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-step" data-step="2" hidden>
+            <div class="intro">
+              <p class="eyebrow">Tell us about your day</p>
+              <h2>What would make it feel <em>effortless?</em></h2>
+              <p>There are no perfect answers. Tell us what matters most to you.</p>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="weddingDescription">How would you describe the wedding you are planning? <span>*</span></label>
+                <textarea id="weddingDescription" name="weddingDescription" required maxlength="1600" rows="4" placeholder="The atmosphere, size, traditions or details you have in mind"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="mostExcited">What are you most excited about?</label>
+                <textarea id="mostExcited" name="mostExcited" maxlength="1200" rows="3" placeholder="The moments you are looking forward to most"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="biggestConcern">What part of the process feels most overwhelming right now? <span>*</span></label>
+                <textarea id="biggestConcern" name="biggestConcern" required maxlength="1200" rows="3" placeholder="Planning, logistics, decision-making or something else"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="desiredRelief">What would you most love not to have to think about?</label>
+                <textarea id="desiredRelief" name="desiredRelief" maxlength="1200" rows="3" placeholder="The details you would feel relieved to place in trusted hands"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="supportNeeded">What kind of support are you hoping Yayin Tov can provide? <span>*</span></label>
+                <textarea id="supportNeeded" name="supportNeeded" required maxlength="1600" rows="4" placeholder="Tell us how we can best support you"></textarea>
+              </div>
+
+              <label class="consent-row" for="consent">
+                <input id="consent" name="consent" type="checkbox" required>
+                <span>I agree that Yayin Tov may use these details to respond to my enquiry. <strong>*</strong></span>
+              </label>
+
+              <div class="honeypot" aria-hidden="true">
+                <label for="company">Company</label>
+                <input id="company" name="company" type="text" tabindex="-1" autocomplete="off">
+              </div>
+            </div>
+
+            <div id="formError" class="form-error" role="alert" hidden></div>
+
+            <div class="actions">
+              <button class="button button-secondary" type="button" data-back>
+                <span aria-hidden="true">←</span> Back
+              </button>
+              <button class="button button-primary" id="submitButton" type="submit">
+                <span class="submit-label">Send enquiry</span>
+                <span class="submit-loading" hidden>Sending…</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <section class="success-state" id="successState" aria-live="polite" hidden>
+          <div class="success-mark" aria-hidden="true">✓</div>
+          <p class="eyebrow">Enquiry received</p>
+          <h2>Thank you for sharing <em>your vision.</em></h2>
+          <p>We’ve sent a confirmation to your email. A member of the Yayin Tov team will review your details and be in touch soon.</p>
+          <div class="success-actions">
+            <a class="button button-primary" href="index.html">Return home</a>
+            <a class="text-link" href="mailto:hello@yayintov.com">hello@yayintov.com</a>
+          </div>
+        </section>
+
+        <p class="form-footnote">Your details are shared privately with the Yayin Tov team.</p>
+      </div>
+    </section>
+
+    <aside class="image-panel" aria-label="Yayin Tov bridal concierge">
+      <img src="assets/consultation-hero.jpg" alt="A bride preparing for her wedding with calm, attentive support">
+      <div class="image-overlay"></div>
+      <div class="image-copy">
+        <p class="eyebrow">Protected peace</p>
+        <blockquote>“Your wedding should feel like a memory while you’re still living it.”</blockquote>
+        <span>Yayin Tov Bridal Concierge</span>
+      </div>
+    </aside>
+  </main>
+
+  <script src="consultation.js" defer></script>
+</body>
+</html>
