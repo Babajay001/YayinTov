@@ -36,6 +36,45 @@ async function readJson(response) {
   }
 }
 
+function enquirySummary(lead) {
+  return [
+    ["Wedding date", lead.wedding_date],
+    ["City or venue", lead.wedding_location],
+    ["Referral source", lead.referral_source],
+    ["Wedding vision", lead.wedding_description],
+    ["Most excited about", lead.most_excited_about],
+    ["Biggest concern", lead.biggest_concern],
+    ["Desired relief", lead.desired_relief],
+    ["Support requested", lead.support_needed],
+  ]
+    .filter(([, value]) => value)
+    .map(([label, value]) => `${label}: ${value}`)
+    .join("\n\n");
+}
+
+function supabaseHeaders(key) {
+  const headers = {
+    apikey: key,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+
+  // Legacy service-role keys are JWTs and require a Bearer header. New
+  // sb_secret_ keys authenticate with apikey and are not valid JWTs.
+  if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`;
+  return headers;
+}
+
+async function insertSupabaseLead(url, key, payload) {
+  const response = await fetch(`${url.replace(/\/$/, "")}/rest/v1/leads`, {
+    method: "POST",
+    headers: supabaseHeaders(key),
+    body: JSON.stringify(payload),
+  });
+
+  return { response, data: await readJson(response) };
+}
+
 async function saveToSupabase(lead) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -44,75 +83,89 @@ async function saveToSupabase(lead) {
     throw new Error("Supabase environment variables are missing.");
   }
 
-  const response = await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/leads`, {
-    method: "POST",
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify(lead),
-  });
+  let result = await insertSupabaseLead(supabaseUrl, supabaseKey, lead);
 
-  const data = await readJson(response);
-  if (!response.ok) {
-    console.error("Supabase lead insert failed", response.status, data);
+  // Keep the live form working while an older leads table is being migrated.
+  // Every answer is preserved in message even when the newer columns are absent.
+  if (!result.response.ok && result.data?.code === "PGRST204") {
+    const legacyLead = {
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      service: "Bridal consultation",
+      message: enquirySummary(lead),
+      source: lead.source,
+      status: lead.status,
+      consent: lead.consent,
+    };
+    result = await insertSupabaseLead(supabaseUrl, supabaseKey, legacyLead);
+  }
+
+  if (!result.response.ok) {
+    console.error("Supabase lead insert failed", result.response.status, result.data);
     throw new Error("We could not securely save this enquiry.");
   }
 
-  return Array.isArray(data) ? data[0] : data;
+  return Array.isArray(result.data) ? result.data[0] : result.data;
 }
 
-async function upsertHubSpotContact(lead) {
-  const serviceKey = process.env.HUBSPOT_SERVICE_KEY;
-  if (!serviceKey) return;
+async function getZohoAccess() {
+  const clientId = process.env.ZOHO_CLIENT_ID;
+  const clientSecret = process.env.ZOHO_CLIENT_SECRET;
+  const refreshToken = process.env.ZOHO_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) return null;
+
+  const accountsUrl = (process.env.ZOHO_ACCOUNTS_URL || "https://accounts.zoho.com").replace(/\/$/, "");
+  const tokenResponse = await fetch(`${accountsUrl}/oauth/v2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  const tokenData = await readJson(tokenResponse);
+
+  if (!tokenResponse.ok || !tokenData?.access_token) {
+    throw new Error(`Zoho token refresh failed (${tokenData?.error || tokenResponse.status}).`);
+  }
+
+  return {
+    accessToken: tokenData.access_token,
+    apiDomain: (tokenData.api_domain || process.env.ZOHO_API_DOMAIN || "https://www.zohoapis.com").replace(/\/$/, ""),
+  };
+}
+
+async function upsertZohoLead(lead) {
+  const auth = await getZohoAccess();
+  if (!auth) return;
 
   const { firstName, lastName } = splitName(lead.name);
-  const standardProperties = {
-    email: lead.email,
-    firstname: firstName,
-    lastname: lastName,
-    phone: lead.phone,
-    lifecyclestage: "lead",
-  };
-  const customProperties = {
-    wedding_date: lead.wedding_date,
-    wedding_location: lead.wedding_location,
-    referral_source: lead.referral_source,
-    wedding_description: lead.wedding_description,
-    most_excited_about: lead.most_excited_about,
-    biggest_concern: lead.biggest_concern,
-    desired_relief: lead.desired_relief,
-    support_needed: lead.support_needed,
-    submission_source: "Yayin Tov website",
-  };
+  const response = await fetch(`${auth.apiDomain}/crm/v8/Leads/upsert`, {
+    method: "POST",
+    headers: {
+      Authorization: `Zoho-oauthtoken ${auth.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      data: [{
+        First_Name: firstName,
+        Last_Name: lastName || firstName,
+        Email: lead.email,
+        Phone: lead.phone,
+        Company: "Private Wedding Client",
+        Description: enquirySummary(lead),
+      }],
+      duplicate_check_fields: ["Email"],
+    }),
+  });
+  const data = await readJson(response);
+  const item = data?.data?.[0];
 
-  async function send(properties) {
-    return fetch("https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: [{ id: lead.email, idProperty: "email", properties }],
-      }),
-    });
-  }
-
-  let response = await send({ ...standardProperties, ...customProperties });
-
-  // The contact still gets created when the optional custom properties have
-  // not yet been added to the client's HubSpot account.
-  if (!response.ok) {
-    const firstError = await readJson(response);
-    console.warn("HubSpot custom property sync failed; retrying basic contact", firstError);
-    response = await send(standardProperties);
-  }
-
-  if (!response.ok) {
-    console.error("HubSpot contact sync failed", response.status, await readJson(response));
+  if (!response.ok || item?.status === "error") {
+    throw new Error(`Zoho lead sync failed (${item?.code || response.status}).`);
   }
 }
 
@@ -269,7 +322,7 @@ export default async function handler(request, response) {
     const leadId = savedLead?.id;
 
     const integrations = await Promise.allSettled([
-      upsertHubSpotContact(lead),
+      upsertZohoLead(lead),
       sendEmails(lead, leadId),
     ]);
 

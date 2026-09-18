@@ -22,6 +22,9 @@ alter table public.leads add column if not exists biggest_concern text;
 alter table public.leads add column if not exists desired_relief text;
 alter table public.leads add column if not exists support_needed text;
 
+-- Refresh PostgREST's schema cache immediately after adding the columns.
+notify pgrst, 'reload schema';
+
 alter table public.leads enable row level security;
 
 -- Do not create a public read policy. The Vercel function writes with the
