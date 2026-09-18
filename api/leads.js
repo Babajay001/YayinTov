@@ -113,7 +113,10 @@ async function getZohoAccess() {
   const clientId = process.env.ZOHO_CLIENT_ID;
   const clientSecret = process.env.ZOHO_CLIENT_SECRET;
   const refreshToken = process.env.ZOHO_REFRESH_TOKEN;
-  if (!clientId || !clientSecret || !refreshToken) return null;
+  if (!clientId || !clientSecret || !refreshToken) {
+    console.warn("Zoho CRM sync skipped: credentials are not configured.");
+    return null;
+  }
 
   const accountsUrl = (process.env.ZOHO_ACCOUNTS_URL || "https://accounts.zoho.com").replace(/\/$/, "");
   const tokenResponse = await fetch(`${accountsUrl}/oauth/v2/token`, {
@@ -186,12 +189,17 @@ async function sendResendEmail(message, idempotencyKey) {
   });
 
   if (!response.ok) {
-    console.error("Resend email failed", response.status, await readJson(response));
+    const data = await readJson(response);
+    console.error("Resend email failed", response.status, data);
+    throw new Error(`Resend email failed (${response.status}).`);
   }
 }
 
 async function sendEmails(lead, leadId) {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("Resend email skipped: API key is not configured.");
+    return;
+  }
 
   const from = process.env.RESEND_FROM_EMAIL || "Yayin Tov <hello@yayintov.com>";
   const businessEmail = process.env.BUSINESS_EMAIL || "hello@yayintov.com";
